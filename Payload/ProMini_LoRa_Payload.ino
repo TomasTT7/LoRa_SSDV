@@ -33,12 +33,13 @@ extern "C"
 #define IMG_BUFF_SIZE               32                               // size of the buffer feeding SSDV process (decreased to 32 bytes to save RAM)
 #define INTERLEAVE_TELEM            50                               // transmit a telemetry packet every X SSDV packets
 
-//#define SECOND_SLOWER_TRANSMISSION                                   // if second slower transmission is desired, uncomment this
+#define SECOND_SLOWER_TRANSMISSION                                   // if second slower transmission is desired, uncomment this
 #define LORA_MODE_SLOW              7                                // optional slower transmission
-#define LORA_FREQUENCY_SLOW         434.300                          // optional slower transmission
+#define LORA_FREQUENCY_SLOW         434.400                          // optional slower transmission
 #define LORA_POWER_SLOW             10                               // optional slower transmission
 
-#define AUTOFOCUS                                                    // if autofocus is desired, uncomment this
+//#define AUTOFOCUS                                                    // if autofocus is desired, uncomment this
+#define SSDV_CHECK                                                   // if checking each image with SSDV first is desired, uncomment this
 
 
 PROGMEM static const uint8_t callsign[] = "TT7L";                    // maximum of 6 characters
@@ -249,12 +250,50 @@ void loop()
     
     ssdv_t ssdv;
 
+#ifdef SSDV_CHECK
+
     /* Image Check with SSDV */
-/*    ssdv_enc_init(&ssdv, SSDV_TYPE_NOFEC, callsign, 0, SSDV_quality);
+    ssdv_enc_init(&ssdv, SSDV_TYPE_NOFEC, callsign, 0, SSDV_quality);
     ssdv_enc_set_buffer(&ssdv, LORA_pkt);
     
     while(1)
     {
+      /* Interleaved Telemetry */
+      if((SSDVpacket % INTERLEAVE_TELEM) == INTERLEAVE_TELEM - 1)
+      {
+        pktLen = GPS_get_and_prepare_data(LORA_pkt);
+
+        if(LORA_mode == 1 || LORA_mode == 4 || LORA_mode == 6 || LORA_mode == 8 || LORA_mode == 9)
+        {
+          for(uint16_t i = pktLen; i < 256; i++) {LORA_pkt[i] = ' ';} // for implicit Mode SSDV
+          pktLen = 255;
+        }
+        
+        LORA_power_mode_standby();
+        LORA_transmit_packet(LORA_pkt, pktLen, LORA_mode);
+        LORA_power_mode_sleep();
+
+#ifdef SECOND_SLOWER_TRANSMISSION
+
+        LORA_mode = LORA_MODE_SLOW;
+        LORA_pwr_out = LORA_POWER_SLOW - 2;
+        LORA_frequency = LORA_FREQUENCY_SLOW;
+        LORA_set_frequency(LORA_frequency);
+      
+        LORA_power_mode_standby();
+        LORA_transmit_packet(LORA_pkt, pktLen_slow, LORA_mode);
+        LORA_power_mode_sleep();
+        
+        LORA_mode = LORA_MODE;
+        LORA_pwr_out = LORA_POWER - 2;
+        LORA_frequency = LORA_FREQUENCY;
+        LORA_set_frequency(LORA_frequency);
+
+#endif // SECOND_SLOWER_TRANSMISSION
+        
+      }
+
+      /* SSDV Packet */
       while((c = ssdv_enc_get_packet(&ssdv)) == SSDV_FEED_ME)
       {
         if(imgStr)                                                      // insert the missing bytes at the start of the image
@@ -289,11 +328,22 @@ void loop()
         ssdvcheck = 0;
         break;
       }
-    }*/ssdvcheck = 1;
+
+      SSDVpacket++;
+    }
+    
+#endif // SSDV_CHECK
+
+#ifndef SSDV_CHECK
+
+    ssdvcheck = 1;
+
+#endif // SSDV_CHECK
 
     /* Main SSDV Process */
     if(ssdvcheck)
     {
+      SSDVpacket = 0;
       imgStr = 1;
       c = 0;
       
@@ -306,7 +356,7 @@ void loop()
       while(1)
       {
         /* Interleaved Telemetry */
-        if((SSDVpacket % INTERLEAVE_TELEM) == 0)
+        if((SSDVpacket % INTERLEAVE_TELEM) == INTERLEAVE_TELEM - 1)
         {
           pktLen = GPS_get_and_prepare_data(LORA_pkt);
 
