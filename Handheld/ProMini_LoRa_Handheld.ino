@@ -42,9 +42,6 @@ float GPSlatF                       = 0.0;
 float GPSlonF                       = 0.0;
 int32_t GPSaltI                     = 0;
 uint8_t GPSsatsU                    = 0;
-uint8_t GPS_position                = 0;
-uint8_t GPS_time_flag               = 0;
-uint8_t GPS_position_flag           = 0;
 
 // NEO-6M (NEO-7M is different)
 static uint8_t setGGArate_off[16]   = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x23};
@@ -157,11 +154,9 @@ void loop()
 
     if(GPS_parse_GPGGA())
     {
-      if(GPS_position_flag) GPS_position = 1;
-    
       OLED_update_receiver();
       if(B_position) OLED_update_pkt_age();
-      if(B_position && GPS_position) OLED_update_calculations();
+      if(B_position) OLED_update_calculations();
     }
     
     GPS_last_update = millis();
@@ -387,7 +382,7 @@ void loop()
     OLED_update_balloon();
     OLED_update_pkt_info();
     OLED_update_pkt_age();
-    if(B_position && GPS_position) OLED_update_calculations();
+    OLED_update_calculations();
     LORA_new_pkt = 0;
   }
 
@@ -1063,17 +1058,10 @@ void OLED_update_receiver(void)
   tim[6] = GPSsecU / 10 % 10 + '0';
   tim[7] = GPSsecU % 10 + '0';
 
-  if(GPS_position_flag)
-  {
-    OLED_draw_string_6x8(lat, 0, 3, 7);                         // receiver latitude
-    OLED_draw_string_6x8(lon, 42, 3, 8);                        // receiver longitude
-    OLED_draw_string_6x8(alt, 96, 3, 5);                        // receiver altitude
-  }
-
-  if(GPS_time_flag)
-  {
-    OLED_draw_string_6x8(tim, 0, 7, 8);                         // receiver GPS time
-  }
+  OLED_draw_string_6x8(lat, 0, 3, 7);                         // receiver latitude
+  OLED_draw_string_6x8(lon, 42, 3, 8);                        // receiver longitude
+  OLED_draw_string_6x8(alt, 96, 3, 5);                        // receiver altitude
+  OLED_draw_string_6x8(tim, 0, 7, 8);                         // receiver GPS time
 }
 
 
@@ -1549,11 +1537,6 @@ uint8_t GPS_parse_GPGGA(void)
     GPShourU = (GPStime[0] - '0') * 10 + (GPStime [1] - '0');
     GPSminU = (GPStime[2] - '0') * 10 + (GPStime [3] - '0');
     GPSsecU = (GPStime[4] - '0') * 10 + (GPStime [5] - '0');
-    GPS_time_flag = 1;
-  }
-  else
-  {
-    GPS_time_flag = 0;
   }
   
   if(GPSlat[2] != '\0' && GPSlon[2] != '\0' && GPSalt[0] != '\0' && GPSfix[0] == '1')
@@ -1613,14 +1596,8 @@ uint8_t GPS_parse_GPGGA(void)
 
     // Satellites
     GPSsatsU = (GPSsats[0] - '0') * 10 + (GPSsats[1] - '0');
-
-    GPS_position_flag = 1;
   }
-  else
-  {
-    GPS_position_flag = 0;
-  }
-
+  
   return 1;
 }
 
