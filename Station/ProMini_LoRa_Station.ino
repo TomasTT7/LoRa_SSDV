@@ -57,7 +57,7 @@ uint8_t EC[] = {0, 5, 6, 7, 8};
 // SETUP FUNCTION ---------------------------------------------------------------------------------
 void setup()
 {
-  Serial.begin(250000);                                             // Arduino <-> PC (Gateway)
+  Serial.begin(500000);                                             // Arduino <-> PC (Gateway)
 
   pinMode(10, OUTPUT);                                              // set up chip select
   digitalWrite(10, HIGH);
@@ -216,6 +216,21 @@ uint8_t LORA_register_read(uint8_t reg)
   digitalWrite(10, HIGH);                           // de-select
   
   return data;
+}
+
+
+/*
+
+*/
+void LORA_FIFO_read(uint8_t * buff, uint8_t len)
+{
+  digitalWrite(10, LOW);                            // select
+  SPI.transfer(0x7F & 0x00);                        // FIFO address
+  for(uint16_t i = 0; i < len; i++)
+  {
+    buff[i] = SPI.transfer(0x00);
+  }
+  digitalWrite(10, HIGH);                           // de-select
 }
 
 
@@ -704,10 +719,7 @@ uint8_t LORA_get_packet(void)
         reg = LORA_register_read(0x13);                                                                   // RxNbBytes
         LORA_register_write(0x0D, LORA_register_read(0x25) - reg);                                        // set FifoAddrPtr to FifoRxByteAddr - RxNbBytes
         
-        for(uint8_t i = 0; i < reg; i++)
-        {
-          LORA_FIFO[i] = LORA_register_read(0x00);                                                        // read RegFifo
-        }
+        LORA_FIFO_read(LORA_FIFO, reg);
         
         if(reg < 255) LORA_FIFO[reg] = '\0';
         
