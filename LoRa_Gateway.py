@@ -109,6 +109,12 @@ class Application(Frame):
         self.pktList = []   # lists the received number of packets for each image e.g. [4, 3]
         self.typeList = []  # lists the image types (FEC, NO-FEC) of each received image e.g. ['g', 'g']
 
+        abs_dir = os.path.dirname(__file__)
+        abs_path = os.path.join(abs_dir, "raw")
+        
+        if not os.path.exists(abs_path):
+            os.makedirs(abs_path)
+
         # receiver/listener
         self.rxLat_val = 0.0
         self.rxLon_val = 0.0
@@ -1144,6 +1150,8 @@ class Application(Frame):
     def upload_listener_information(self, callsign, latitude, longitude):
         """
         Creates a new document in Habitat's couchDB database.
+        Based on Uploader module in Habitat documentation:
+            http://habitat.readthedocs.io/en/latest/_modules/habitat/uploader.html
 
         {
           "type": "listener_information", 
@@ -1179,7 +1187,6 @@ class Application(Frame):
 
         with self._lock:
             self._latest["listener_information"] = doc_id
-            self.status("Listener information uploaded.")
         
         return doc_id
 
@@ -1187,6 +1194,8 @@ class Application(Frame):
     def upload_listener_telemetry(self, callsign, latitude, longitude, altitude):
         """
         Creates a new document in Habitat's couchDB database.
+        Based on Uploader module in Habitat documentation:
+            http://habitat.readthedocs.io/en/latest/_modules/habitat/uploader.html
 
         {
           "type": "listener_telemetry", 
@@ -1224,7 +1233,6 @@ class Application(Frame):
 
         with self._lock:
             self._latest["listener_telemetry"] = doc_id
-            self.status("Listener telemetry uploaded.")
         
         return doc_id
 
@@ -1232,6 +1240,8 @@ class Application(Frame):
     def upload_payload_telemetry(self, string, listener):
         """
         Either creates a new document in Habitat's couchDB database for *string* or adds a receiver to *string*'s existing document.
+        Based on Uploader module in Habitat documentation:
+            http://habitat.readthedocs.io/en/latest/_modules/habitat/uploader.html
         """
         receiver_info = {}
         
@@ -1258,9 +1268,6 @@ class Application(Frame):
                 
                 url = "_design/payload_telemetry/_update/add_listener/" + doc_id
                 self.db.res.put(url, payload=doc_ish).skip_body()
-                
-                with self._lock:
-                    self.status("Telemetry string uploaded.")
                 
             except couchdbkit.exceptions.ResourceConflict:
                 continue
@@ -1291,9 +1298,10 @@ class Application(Frame):
            'Content-Length':str(len(json.dumps(ssdvData)))
            }
         
-        r = requests.post(url = self.ssdvServer, data=json.dumps(ssdvData), headers=headers)
-        with self._lock:
-            self.status("SSDV packet uploaded.")
+        try:
+            r = requests.post(url = self.ssdvServer, data=json.dumps(ssdvData), headers=headers)
+        except:
+            pass
         
         return r
 
@@ -1316,7 +1324,7 @@ root = Tk()
 root.title("LoRa Gateway TT7")
 root.geometry("1150x635")
 
-app = Application(root, serial.Serial(baudrate=250000))
+app = Application(root, serial.Serial(baudrate=500000))
 
 #kick off the event loop
 root.mainloop()
