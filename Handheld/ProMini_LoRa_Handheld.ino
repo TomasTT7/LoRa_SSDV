@@ -2084,7 +2084,7 @@ void LORA_get_packet_SNR(void)
   
   if(snr < 0)
   {
-    LORA_RSSI_packet = LORA_RSSI_CONSTANT + pktrssi + (pktrssi >> 4) + LORA_SNR_packet;                   // dBm
+    LORA_RSSI_packet = LORA_RSSI_CONSTANT + pktrssi + LORA_SNR_packet;                                    // dBm
   }else{
     LORA_RSSI_packet = LORA_RSSI_CONSTANT + pktrssi + (pktrssi >> 4);                                     // dBm
   }
