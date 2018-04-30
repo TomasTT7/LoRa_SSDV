@@ -12,6 +12,10 @@ This repository contains the firmware for three different parts of a LoRa based 
 <img src="/docs/IMG_2173_station_hardware.JPG" height="270" width="360">
 
 ##### Gateway
-
+<img src="/docs/gateway_06_full_03.png" height="167" width="289">|
+<img src="/docs/gateway_06_full_02.jpg" height="167" width="289">
+|:---:|:---:|
 
 ### Installation
+- The three pieces of hardware are all Arduino ProMini based, so the firmware is installed via the Arduino IDE.
+- The LoRa_Gateway, aside from all the imported Python modules, expects a compiled command line app SSDV.exe in the same folder. The source code for the app can be found in Philip Heron's Github [repository](https://github.com/fsphil/ssdv).
